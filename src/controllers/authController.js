@@ -54,7 +54,7 @@ export const login = async (req, res) => {
 
 export const setupUser = async (req, res) => {
     try {
-        const { name, email, password, role, companyDetails } = req.body;
+        const { name, email, password, role, companyDetails, tenantId } = req.body;
 
         const userExists = await User.findOne({ email });
         if (userExists) {
@@ -66,7 +66,8 @@ export const setupUser = async (req, res) => {
             email,
             password,
             role: role || 'user',
-            companyDetails
+            companyDetails,
+            tenantId
         });
 
         if (user) {
@@ -88,5 +89,37 @@ export const setupUser = async (req, res) => {
     } catch (error) {
         console.error('Setup user error:', error);
         res.status(500).json({ success: false, message: 'Server error during setup', error: error.message });
+    }
+};
+export const getAdmins = async (req, res) => {
+    try {
+        const admins = await User.find({ role: 'admin' }).select('-password');
+        res.json({
+            success: true,
+            data: admins
+        });
+    } catch (error) {
+        console.error('Get admins error:', error);
+        res.status(500).json({ success: false, message: 'Server error while fetching admins' });
+    }
+};
+export const getDrivers = async (req, res) => {
+    try {
+        // Find all drivers belonging to this admin's tenant
+        const query = { role: 'driver' };
+
+        // If the requester is an admin, only show their drivers
+        if (req.user.role === 'admin') {
+            query.tenantId = req.user._id;
+        }
+
+        const drivers = await User.find(query).select('-password');
+        res.json({
+            success: true,
+            data: drivers
+        });
+    } catch (error) {
+        console.error('Get drivers error:', error);
+        res.status(500).json({ success: false, message: 'Server error while fetching drivers' });
     }
 };
