@@ -5,15 +5,9 @@ import morgan from 'morgan';
 import connectDB from './config/db.js';
 import { protect } from './middleware/authMiddleware.js';
 import authRoutes from './routes/authRoutes.js';
-import categoryRoutes from './routes/categoryRoutes.js';
-import customerRoutes from './routes/customerRoutes.js';
-import inventoryRoutes from './routes/inventoryRoutes.js';
-import bookingRoutes from './routes/bookingRoutes.js';
-import expenseRoutes from './routes/expenseRoutes.js';
+import vehicleRoutes from './routes/vehicleRoutes.js';
+import tripRoutes from './routes/tripRoutes.js';
 import maintenanceRoutes from './routes/maintenanceRoutes.js';
-import analyticsRoutes from './routes/analyticsRoutes.js';
-import invoiceRoutes from './routes/invoiceRoutes.js';
-import bankDetailRoutes from './routes/bankDetailRoutes.js';
 
 // Load env vars
 dotenv.config();
@@ -38,15 +32,9 @@ if (process.env.NODE_ENV === 'development') {
 app.use('/api/auth', authRoutes);
 
 // Mount protected routes
-app.use('/api/categories', protect, categoryRoutes);
-app.use('/api/customers', protect, customerRoutes);
-app.use('/api/items', protect, inventoryRoutes);
-app.use('/api/bookings', protect, bookingRoutes);
-app.use('/api/expenses', protect, expenseRoutes);
+app.use('/api/vehicles', protect, vehicleRoutes);
+app.use('/api/trips', protect, tripRoutes);
 app.use('/api/maintenance', protect, maintenanceRoutes);
-app.use('/api/analytics', protect, analyticsRoutes);
-app.use('/api/invoices', protect, invoiceRoutes);
-app.use('/api/bank-details', protect, bankDetailRoutes);
 
 
 // Error handler
@@ -63,7 +51,8 @@ app.get('/', (req, res) => {
     res.send('Rental ERP API is running...');
 });
 
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5050;
+console.log('--- SERVER STARTING ON PORT:', PORT);
 const HOST = '0.0.0.0';
 
 app.listen(PORT, HOST, () => {

@@ -30,12 +30,17 @@ const userSchema = new mongoose.Schema({
     },
     role: {
         type: String,
-        enum: ['user', 'superadmin'],
-        default: 'user'
+        enum: ['superadmin', 'admin', 'driver'],
+        default: 'admin'
+    },
+    tenantId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        default: null // Superadmin or Admin might be their own tenant. Drivers will have their Admin's ID here.
     },
     companyDetails: {
         type: companyDetailsSchema,
-        required: true
+        required: false
     }
 }, {
     timestamps: true

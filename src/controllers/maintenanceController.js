@@ -1,55 +1,76 @@
 import Maintenance from '../models/Maintenance.js';
 
-// @desc    Get all maintenance records
+// @desc    Get all maintenance records for a tenant
 // @route   GET /api/maintenance
-export const getMaintenanceRecords = async (req, res) => {
+// @access  Private/Admin
+export const getMaintenance = async (req, res) => {
     try {
-        const records = await Maintenance.find({ user: req.user._id }).populate('item').sort({ scheduled_date: 1 });
-        res.status(200).json({ success: true, data: records, message: null });
+        const records = await Maintenance.find({ tenantId: req.user._id })
+            .populate('vehicleId', 'licensePlate make model');
+        res.json({ success: true, data: records });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        res.status(500).json({ success: false, message: 'Server error', error: error.message });
     }
 };
 
-// @desc    Create a maintenance record
+// @desc    Log a new maintenance record
 // @route   POST /api/maintenance
+// @access  Private/Admin
 export const createMaintenanceRecord = async (req, res) => {
     try {
-        const newRecord = new Maintenance({
-            ...req.body,
-            user: req.user._id
+        const { vehicleId, description, cost, serviceDate, type, status, notes } = req.body;
+
+        const record = await Maintenance.create({
+            vehicleId,
+            description,
+            cost,
+            serviceDate,
+            type,
+            status,
+            notes,
+            tenantId: req.user._id
         });
-        const record = await newRecord.save();
+
         res.status(201).json({ success: true, data: record, message: 'Maintenance record created successfully' });
     } catch (error) {
-        res.status(400).json({ success: false, message: error.message });
+        res.status(500).json({ success: false, message: 'Server error', error: error.message });
     }
 };
 
-// @desc    Update a maintenance record
+// @desc    Update maintenance record status
 // @route   PUT /api/maintenance/:id
-export const updateMaintenanceRecord = async (req, res) => {
+// @access  Private/Admin
+export const updateMaintenanceStatus = async (req, res) => {
     try {
+        const { status, notes, cost, description } = req.body;
+
         const record = await Maintenance.findOneAndUpdate(
-            { _id: req.params.id, user: req.user._id },
-            req.body,
+            { _id: req.params.id, tenantId: req.user._id },
+            { status, notes, cost, description },
             { new: true }
         );
-        if (!record) return res.status(404).json({ success: false, message: 'Maintenance record not found or unauthorized' });
-        res.status(200).json({ success: true, data: record, message: 'Maintenance record updated successfully' });
+
+        if (!record) {
+            return res.status(404).json({ success: false, message: 'Record not found' });
+        }
+
+        res.json({ success: true, data: record, message: 'Maintenance record updated successfully' });
     } catch (error) {
-        res.status(400).json({ success: false, message: error.message });
+        res.status(500).json({ success: false, message: 'Server error', error: error.message });
     }
 };
 
-// @desc    Delete a maintenance record
-// @route   DELETE /api/maintenance/:id
-export const deleteMaintenanceRecord = async (req, res) => {
+// @desc    Get maintenance records for a specific vehicle
+// @route   GET /api/maintenance/vehicle/:id
+// @access  Private/Admin
+export const getVehicleMaintenance = async (req, res) => {
     try {
-        const record = await Maintenance.findOneAndDelete({ _id: req.params.id, user: req.user._id });
-        if (!record) return res.status(404).json({ success: false, message: 'Maintenance record not found or unauthorized' });
-        res.status(200).json({ success: true, data: record, message: 'Maintenance record deleted successfully' });
+        const records = await Maintenance.find({
+            vehicleId: req.params.id,
+            tenantId: req.user._id
+        });
+        res.json({ success: true, data: records });
     } catch (error) {
-        res.status(400).json({ success: false, message: error.message });
+        res.status(500).json({ success: false, message: 'Server error', error: error.message });
     }
 };

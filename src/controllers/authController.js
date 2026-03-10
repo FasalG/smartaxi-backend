@@ -2,7 +2,7 @@ import User from '../models/User.js';
 import jwt from 'jsonwebtoken';
 
 const generateToken = (id) => {
-    return jwt.sign({ id }, process.env.JWT_SECRET || 'secret_zorta_key_2026', {
+    return jwt.sign({ id }, process.env.JWT_SECRET || 'secret_smarttaxi_key_2026', {
         expiresIn: '30d',
     });
 };
@@ -14,12 +14,18 @@ export const login = async (req, res) => {
             return res.status(400).json({ success: false, message: 'Please provide an email and password' });
         }
 
+        console.time('findUser');
         const user = await User.findOne({ email }).select('+password');
+        console.timeEnd('findUser');
+
         if (!user) {
+            console.log('User not found:', email);
             return res.status(401).json({ success: false, message: 'Invalid credentials' });
         }
 
+        console.time('matchPassword');
         const isMatch = await user.matchPassword(password);
+        console.timeEnd('matchPassword');
         if (!isMatch) {
             return res.status(401).json({ success: false, message: 'Invalid credentials' });
         }

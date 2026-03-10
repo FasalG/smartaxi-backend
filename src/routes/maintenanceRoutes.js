@@ -1,16 +1,16 @@
 import express from 'express';
-import {
-    getMaintenanceRecords, createMaintenanceRecord, updateMaintenanceRecord, deleteMaintenanceRecord
-} from '../controllers/maintenanceController.js';
+import { getMaintenance, createMaintenanceRecord, updateMaintenanceStatus, getVehicleMaintenance } from '../controllers/maintenanceController.js';
+import { protect } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
 router.route('/')
-    .get(getMaintenanceRecords)
-    .post(createMaintenanceRecord);
+    .get(protect, getMaintenance)
+    .post(protect, createMaintenanceRecord);
 
 router.route('/:id')
-    .put(updateMaintenanceRecord)
-    .delete(deleteMaintenanceRecord);
+    .put(protect, updateMaintenanceStatus);
+
+router.get('/vehicle/:id', protect, getVehicleMaintenance);
 
 export default router;
