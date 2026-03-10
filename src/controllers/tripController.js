@@ -29,23 +29,46 @@ export const getDriverTrips = async (req, res) => {
 
 // @desc    Create a new trip
 // @route   POST /api/trips
-// @access  Private/Admin
+// @access  Private/Admin/Driver
 export const createTrip = async (req, res) => {
     try {
-        const { driverId, vehicleId, startLocation, startTime, notes } = req.body;
-
-        const trip = await Trip.create({
+        const {
             driverId,
             vehicleId,
             startLocation,
             startTime,
+            customerName,
+            visitingPlaces,
+            tripType,
+            acType,
+            startOdometer,
+            notes
+        } = req.body;
+
+        const tenantId = req.user.role === 'admin' ? req.user._id : req.user.tenantId;
+
+        const trip = await Trip.create({
+            driverId: driverId || req.user._id,
+            vehicleId,
+            startLocation,
+            startTime: startTime || Date.now(),
+            customerName,
+            visitingPlaces,
+            tripType,
+            acType,
+            startOdometer,
             notes,
-            tenantId: req.user._id,
+            tenantId,
             status: 'in-progress'
         });
 
-        res.status(201).json({ success: true, data: trip, message: 'Trip started successfully' });
+        const populatedTrip = await Trip.findById(trip._id)
+            .populate('driverId', 'name email')
+            .populate('vehicleId', 'licensePlate make model');
+
+        res.status(201).json({ success: true, data: populatedTrip, message: 'Trip started successfully' });
     } catch (error) {
+        console.error('Create trip error:', error);
         res.status(500).json({ success: false, message: 'Server error', error: error.message });
     }
 };
@@ -55,10 +78,32 @@ export const createTrip = async (req, res) => {
 // @access  Private/Admin/Driver
 export const updateTripStatus = async (req, res) => {
     try {
-        const { status, endLocation, endTime, distance, fareAmount, paymentStatus } = req.body;
+        const {
+            status,
+            endLocation,
+            endTime,
+            endOdometer,
+            totalKm,
+            totalDays,
+            totalHours,
+            minimumCharges,
+            extraKmCharges,
+            extraHoursCharges,
+            tollParking,
+            permitTax,
+            nightCharges,
+            fuelCharges,
+            advanceAmount,
+            totalAmount,
+            balanceAmount,
+            paidAmount,
+            guestComments,
+            paymentStatus,
+            notes
+        } = req.body;
 
         // Find trip by ID and ensure it belongs to the tenant OR the driver
-        const trip = await Trip.findOne({
+        let trip = await Trip.findOne({
             _id: req.params.id,
             $or: [{ tenantId: req.user._id }, { driverId: req.user._id }]
         });
@@ -70,14 +115,34 @@ export const updateTripStatus = async (req, res) => {
         if (status) trip.status = status;
         if (endLocation) trip.endLocation = endLocation;
         if (endTime) trip.endTime = endTime;
-        if (distance) trip.distance = distance;
-        if (fareAmount) trip.fareAmount = fareAmount;
+        if (endOdometer) trip.endOdometer = endOdometer;
+        if (totalKm !== undefined) trip.totalKm = totalKm;
+        if (totalDays !== undefined) trip.totalDays = totalDays;
+        if (totalHours !== undefined) trip.totalHours = totalHours;
+        if (minimumCharges !== undefined) trip.minimumCharges = minimumCharges;
+        if (extraKmCharges !== undefined) trip.extraKmCharges = extraKmCharges;
+        if (extraHoursCharges !== undefined) trip.extraHoursCharges = extraHoursCharges;
+        if (tollParking !== undefined) trip.tollParking = tollParking;
+        if (permitTax !== undefined) trip.permitTax = permitTax;
+        if (nightCharges !== undefined) trip.nightCharges = nightCharges;
+        if (fuelCharges !== undefined) trip.fuelCharges = fuelCharges;
+        if (advanceAmount !== undefined) trip.advanceAmount = advanceAmount;
+        if (totalAmount !== undefined) trip.totalAmount = totalAmount;
+        if (balanceAmount !== undefined) trip.balanceAmount = balanceAmount;
+        if (paidAmount !== undefined) trip.paidAmount = paidAmount;
+        if (guestComments) trip.guestComments = guestComments;
         if (paymentStatus) trip.paymentStatus = paymentStatus;
+        if (notes) trip.notes = notes;
 
         await trip.save();
 
-        res.json({ success: true, data: trip, message: 'Trip updated successfully' });
+        const populatedTrip = await Trip.findById(trip._id)
+            .populate('driverId', 'name email')
+            .populate('vehicleId', 'licensePlate make model');
+
+        res.json({ success: true, data: populatedTrip, message: 'Trip updated successfully' });
     } catch (error) {
+        console.error('Update trip error:', error);
         res.status(500).json({ success: false, message: 'Server error', error: error.message });
     }
 };

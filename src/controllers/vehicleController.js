@@ -5,7 +5,15 @@ import Vehicle from '../models/Vehicle.js';
 // @access  Private/Admin
 export const getVehicles = async (req, res) => {
     try {
-        const vehicles = await Vehicle.find({ tenantId: req.user._id });
+        const tenantId = req.user.role === 'admin' ? req.user._id : req.user.tenantId;
+
+        // If it's a driver and tenantId is missing, they might be unassigned
+        if (!tenantId && req.user.role === 'driver') {
+            return res.json({ success: true, data: [] });
+        }
+
+        const query = tenantId ? { tenantId } : {};
+        const vehicles = await Vehicle.find(query);
         res.json({ success: true, data: vehicles });
     } catch (error) {
         res.status(500).json({ success: false, message: 'Server error', error: error.message });

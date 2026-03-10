@@ -52,6 +52,41 @@ export const login = async (req, res) => {
     }
 };
 
+export const getMe = async (req, res) => {
+    try {
+        let user = await User.findById(req.user._id);
+
+        if (!user) {
+            return res.status(404).json({ success: false, message: 'User not found' });
+        }
+
+        const userResponse = {
+            _id: user._id,
+            name: user.name,
+            email: user.email,
+            role: user.role,
+            tenantId: user.tenantId,
+            companyDetails: user.companyDetails
+        };
+
+        // If driver, we might want to return the company name from their admin (tenant)
+        if (user.role === 'driver' && user.tenantId) {
+            const admin = await User.findById(user.tenantId);
+            if (admin && admin.companyDetails) {
+                userResponse.companyDetails = admin.companyDetails;
+            }
+        }
+
+        res.json({
+            success: true,
+            data: userResponse
+        });
+    } catch (error) {
+        console.error('Get me error:', error);
+        res.status(500).json({ success: false, message: 'Server error while fetching profile' });
+    }
+};
+
 export const setupUser = async (req, res) => {
     try {
         const { name, email, password, role, companyDetails, tenantId } = req.body;
