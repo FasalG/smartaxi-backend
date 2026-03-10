@@ -123,3 +123,66 @@ export const getDrivers = async (req, res) => {
         res.status(500).json({ success: false, message: 'Server error while fetching drivers' });
     }
 };
+
+export const updateUser = async (req, res) => {
+    try {
+        const { name, email, role, companyDetails } = req.body;
+        const user = await User.findById(req.params.id);
+
+        if (!user) {
+            return res.status(404).json({ success: false, message: 'User not found' });
+        }
+
+        // Check permission: superadmin can update anyone, admin can update their own drivers or themselves
+        if (req.user.role !== 'superadmin' && req.user._id.toString() !== user.tenantId?.toString() && req.user._id.toString() !== user._id.toString()) {
+            return res.status(403).json({ success: false, message: 'Not authorized to update this user' });
+        }
+
+        user.name = name || user.name;
+        user.email = email || user.email;
+        user.role = role || user.role;
+        if (companyDetails) user.companyDetails = companyDetails;
+
+        if (req.body.password) {
+            user.password = req.body.password;
+        }
+
+        await user.save();
+
+        res.json({
+            success: true,
+            message: 'User updated successfully',
+            data: {
+                _id: user._id,
+                name: user.name,
+                email: user.email,
+                role: user.role,
+                companyDetails: user.companyDetails
+            }
+        });
+    } catch (error) {
+        console.error('Update user error:', error);
+        res.status(500).json({ success: false, message: 'Server error during update', error: error.message });
+    }
+};
+
+export const deleteUser = async (req, res) => {
+    try {
+        const user = await User.findById(req.params.id);
+
+        if (!user) {
+            return res.status(404).json({ success: false, message: 'User not found' });
+        }
+
+        // Check permission
+        if (req.user.role !== 'superadmin' && req.user._id.toString() !== user.tenantId?.toString()) {
+            return res.status(403).json({ success: false, message: 'Not authorized to delete this user' });
+        }
+
+        await user.deleteOne();
+        res.json({ success: true, message: 'User deleted successfully' });
+    } catch (error) {
+        console.error('Delete user error:', error);
+        res.status(500).json({ success: false, message: 'Server error during deletion', error: error.message });
+    }
+};

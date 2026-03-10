@@ -81,3 +81,19 @@ export const updateTripStatus = async (req, res) => {
         res.status(500).json({ success: false, message: 'Server error', error: error.message });
     }
 };
+export const deleteTrip = async (req, res) => {
+    try {
+        const trip = await Trip.findOneAndDelete({
+            _id: req.params.id,
+            tenantId: req.user._id
+        });
+
+        if (!trip) {
+            return res.status(404).json({ success: false, message: 'Trip not found' });
+        }
+
+        res.json({ success: true, message: 'Trip deleted successfully' });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Server error', error: error.message });
+    }
+};

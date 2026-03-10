@@ -1,5 +1,5 @@
 import express from 'express';
-import { getTrips, getDriverTrips, createTrip, updateTripStatus } from '../controllers/tripController.js';
+import { getTrips, getDriverTrips, createTrip, updateTripStatus, deleteTrip } from '../controllers/tripController.js';
 import { protect } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
@@ -11,6 +11,7 @@ router.route('/')
 router.get('/driver', protect, getDriverTrips);
 
 router.route('/:id')
-    .put(protect, updateTripStatus);
+    .put(protect, updateTripStatus)
+    .delete(protect, deleteTrip);
 
 export default router;
