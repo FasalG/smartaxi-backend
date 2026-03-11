@@ -37,11 +37,16 @@ export const createTrip = async (req, res) => {
             vehicleId,
             startLocation,
             startTime,
+            endTime,
             customerName,
             visitingPlaces,
             tripType,
             acType,
             startOdometer,
+            endOdometer,
+            totalKm,
+            totalAmount,
+            balanceAmount,
             notes
         } = req.body;
 
@@ -52,11 +57,16 @@ export const createTrip = async (req, res) => {
             vehicleId,
             startLocation,
             startTime: startTime || Date.now(),
+            endTime,
             customerName,
             visitingPlaces,
             tripType,
             acType,
             startOdometer,
+            endOdometer,
+            totalKm,
+            totalAmount,
+            balanceAmount,
             notes,
             tenantId,
             status: 'in-progress'
@@ -79,8 +89,14 @@ export const createTrip = async (req, res) => {
 export const updateTripStatus = async (req, res) => {
     try {
         const {
+            driverId,
+            vehicleId,
+            customerName,
+            visitingPlaces,
+            startLocation,
             status,
             endLocation,
+            startTime,
             endTime,
             endOdometer,
             totalKm,
@@ -113,7 +129,13 @@ export const updateTripStatus = async (req, res) => {
         }
 
         if (status) trip.status = status;
+        if (driverId) trip.driverId = driverId;
+        if (vehicleId) trip.vehicleId = vehicleId;
+        if (customerName) trip.customerName = customerName;
+        if (visitingPlaces) trip.visitingPlaces = visitingPlaces;
+        if (startLocation) trip.startLocation = startLocation;
         if (endLocation) trip.endLocation = endLocation;
+        if (startTime) trip.startTime = startTime;
         if (endTime) trip.endTime = endTime;
         if (endOdometer) trip.endOdometer = endOdometer;
         if (totalKm !== undefined) trip.totalKm = totalKm;
@@ -146,6 +168,7 @@ export const updateTripStatus = async (req, res) => {
         res.status(500).json({ success: false, message: 'Server error', error: error.message });
     }
 };
+
 export const deleteTrip = async (req, res) => {
     try {
         const trip = await Trip.findOneAndDelete({
