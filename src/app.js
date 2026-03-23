@@ -9,6 +9,7 @@ import authRoutes from './routes/authRoutes.js';
 import vehicleRoutes from './routes/vehicleRoutes.js';
 import tripRoutes from './routes/tripRoutes.js';
 import maintenanceRoutes from './routes/maintenanceRoutes.js';
+import customerRoutes from './routes/customerRoutes.js';
 
 // Load env vars
 dotenv.config();
@@ -36,7 +37,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/vehicles', protect, vehicleRoutes);
 app.use('/api/trips', protect, tripRoutes);
 app.use('/api/maintenance', protect, maintenanceRoutes);
-
+app.use('/api/customers', protect, customerRoutes);
 
 // Error handler
 app.use((err, req, res, next) => {

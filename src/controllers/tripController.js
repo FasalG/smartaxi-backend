@@ -7,7 +7,8 @@ export const getTrips = async (req, res) => {
     try {
         const trips = await Trip.find({ tenantId: req.user._id })
             .populate('driverId', 'name email')
-            .populate('vehicleId', 'licensePlate make model');
+            .populate('vehicleId', 'licensePlate make model')
+            .populate('customerId', 'name phone address');
         res.json({ success: true, data: trips });
     } catch (error) {
         res.status(500).json({ success: false, message: 'Server error', error: error.message });
@@ -20,7 +21,8 @@ export const getTrips = async (req, res) => {
 export const getDriverTrips = async (req, res) => {
     try {
         const trips = await Trip.find({ driverId: req.user._id })
-            .populate('vehicleId', 'licensePlate make model');
+            .populate('vehicleId', 'licensePlate make model')
+            .populate('customerId', 'name phone address');
         res.json({ success: true, data: trips });
     } catch (error) {
         res.status(500).json({ success: false, message: 'Server error', error: error.message });
@@ -38,6 +40,7 @@ export const createTrip = async (req, res) => {
             startLocation,
             startTime,
             endTime,
+            customerId,
             customerName,
             visitingPlaces,
             tripType,
@@ -58,9 +61,10 @@ export const createTrip = async (req, res) => {
             startLocation,
             startTime: startTime || Date.now(),
             endTime,
+            customerId,
             customerName,
             visitingPlaces,
-            tripType,
+            tripType, // Even if not asked, backend doesn't care. The frontend won't ask and we will default it if not passed.
             acType,
             startOdometer,
             endOdometer,
@@ -69,12 +73,13 @@ export const createTrip = async (req, res) => {
             balanceAmount,
             notes,
             tenantId,
-            status: 'in-progress'
+            status: req.body.status || 'in-progress'
         });
 
         const populatedTrip = await Trip.findById(trip._id)
             .populate('driverId', 'name email')
-            .populate('vehicleId', 'licensePlate make model');
+            .populate('vehicleId', 'licensePlate make model')
+            .populate('customerId', 'name phone address');
 
         res.status(201).json({ success: true, data: populatedTrip, message: 'Trip started successfully' });
     } catch (error) {
@@ -91,6 +96,7 @@ export const updateTripStatus = async (req, res) => {
         const {
             driverId,
             vehicleId,
+            customerId,
             customerName,
             visitingPlaces,
             startLocation,
@@ -109,12 +115,17 @@ export const updateTripStatus = async (req, res) => {
             permitTax,
             nightCharges,
             fuelCharges,
+            driverBata,
+            otherExpenses,
             advanceAmount,
             totalAmount,
             balanceAmount,
             paidAmount,
+            driverSettlementAmount,
             guestComments,
             paymentStatus,
+            tripType, // to save at end
+            otherExpensesList,
             notes
         } = req.body;
 
@@ -131,6 +142,7 @@ export const updateTripStatus = async (req, res) => {
         if (status) trip.status = status;
         if (driverId) trip.driverId = driverId;
         if (vehicleId) trip.vehicleId = vehicleId;
+        if (customerId) trip.customerId = customerId;
         if (customerName) trip.customerName = customerName;
         if (visitingPlaces) trip.visitingPlaces = visitingPlaces;
         if (startLocation) trip.startLocation = startLocation;
@@ -148,19 +160,25 @@ export const updateTripStatus = async (req, res) => {
         if (permitTax !== undefined) trip.permitTax = permitTax;
         if (nightCharges !== undefined) trip.nightCharges = nightCharges;
         if (fuelCharges !== undefined) trip.fuelCharges = fuelCharges;
+        if (driverBata !== undefined) trip.driverBata = driverBata;
+        if (otherExpenses !== undefined) trip.otherExpenses = otherExpenses;
         if (advanceAmount !== undefined) trip.advanceAmount = advanceAmount;
         if (totalAmount !== undefined) trip.totalAmount = totalAmount;
         if (balanceAmount !== undefined) trip.balanceAmount = balanceAmount;
         if (paidAmount !== undefined) trip.paidAmount = paidAmount;
+        if (driverSettlementAmount !== undefined) trip.driverSettlementAmount = driverSettlementAmount;
         if (guestComments) trip.guestComments = guestComments;
         if (paymentStatus) trip.paymentStatus = paymentStatus;
+        if (tripType) trip.tripType = tripType;
+        if (otherExpensesList) trip.otherExpensesList = otherExpensesList;
         if (notes) trip.notes = notes;
 
         await trip.save();
 
         const populatedTrip = await Trip.findById(trip._id)
             .populate('driverId', 'name email')
-            .populate('vehicleId', 'licensePlate make model');
+            .populate('vehicleId', 'licensePlate make model')
+            .populate('customerId', 'name phone address');
 
         res.json({ success: true, data: populatedTrip, message: 'Trip updated successfully' });
     } catch (error) {

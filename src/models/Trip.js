@@ -32,8 +32,12 @@ const tripSchema = new mongoose.Schema({
     endLocation: {
         type: String
     },
+    customerId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Customer'
+    },
     customerName: {
-        type: String,
+        type: String, // Kept for backward compatibility or display
         required: [true, 'Customer name is required']
     },
     visitingPlaces: {
@@ -97,6 +101,18 @@ const tripSchema = new mongoose.Schema({
         type: Number,
         default: 0
     },
+    driverBata: {
+        type: Number,
+        default: 0
+    },
+    otherExpenses: {
+        type: Number,
+        default: 0
+    },
+    otherExpensesList: [{
+        name: String,
+        amount: Number
+    }],
     advanceAmount: {
         type: Number,
         default: 0
@@ -109,6 +125,14 @@ const tripSchema = new mongoose.Schema({
         type: Number,
         default: 0
     },
+    driverSettlementAmount: {
+        type: Number,
+        default: 0 // +ve means driver owes admin, -ve means admin owes driver
+    },
+    driverEarnings: {
+        type: Number,
+        default: 0
+    },
     paidAmount: {
         type: Number,
         default: 0
@@ -118,7 +142,7 @@ const tripSchema = new mongoose.Schema({
     },
     status: {
         type: String,
-        enum: ['in-progress', 'completed', 'cancelled'],
+        enum: ['scheduled', 'in-progress', 'completed', 'cancelled'],
         default: 'in-progress'
     },
     paymentStatus: {
