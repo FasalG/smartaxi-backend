@@ -40,20 +40,13 @@ const tripSchema = new mongoose.Schema({
         type: String, // Kept for backward compatibility or display
         required: [true, 'Customer name is required']
     },
-    visitingPlaces: {
-        type: String,
-        required: [true, 'Visiting places are required']
-    },
+
     tripType: {
         type: String,
         enum: ['Cash', 'Credit'],
         default: 'Cash'
     },
-    acType: {
-        type: String,
-        enum: ['A/C', 'Non A/C'],
-        default: 'A/C'
-    },
+
     startOdometer: {
         type: Number,
         required: [true, 'Starting odometer reading is required']
@@ -73,27 +66,11 @@ const tripSchema = new mongoose.Schema({
         type: Number,
         default: 0
     },
-    minimumCharges: {
-        type: Number,
-        default: 0
-    },
-    extraKmCharges: {
-        type: Number,
-        default: 0
-    },
-    extraHoursCharges: {
+    totalHours: {
         type: Number,
         default: 0
     },
     tollParking: {
-        type: Number,
-        default: 0
-    },
-    permitTax: {
-        type: Number,
-        default: 0
-    },
-    nightCharges: {
         type: Number,
         default: 0
     },
@@ -149,6 +126,22 @@ const tripSchema = new mongoose.Schema({
         type: String,
         enum: ['pending', 'paid'],
         default: 'pending'
+    },
+    driverPaymentStatus: {
+        type: String,
+        enum: ['pending', 'submitted', 'confirmed'],
+        default: 'pending'
+    },
+    driverSettlementMethod: {
+        type: String,
+        enum: ['cash', 'balance', 'none'],
+        default: 'none'
+    },
+    driverPaymentSubmittedAt: {
+        type: Date
+    },
+    adminConfirmedAt: {
+        type: Date
     },
     notes: {
         type: String

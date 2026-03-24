@@ -11,6 +11,10 @@ const vehicleSchema = new mongoose.Schema({
         enum: ['active', 'maintenance', 'inactive'],
         default: 'active'
     },
+    driverPaymentPercentage: {
+        type: Number,
+        default: 20
+    },
     // The admin's ID this vehicle belongs to
     tenantId: {
         type: mongoose.Schema.Types.ObjectId,

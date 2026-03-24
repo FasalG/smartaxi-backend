@@ -24,7 +24,7 @@ export const getCustomers = async (req, res) => {
 // @access  Private
 export const createCustomer = async (req, res) => {
     try {
-        const { name, phone, email, address } = req.body;
+        const { name, phone, email, address, isEligibleForCredit, creditPeriodDays } = req.body;
         const tenantId = req.user.role === 'admin' ? req.user._id : req.user.tenantId;
 
         const customer = await Customer.create({
@@ -32,6 +32,8 @@ export const createCustomer = async (req, res) => {
             phone,
             email,
             address,
+            isEligibleForCredit,
+            creditPeriodDays,
             tenantId
         });
 

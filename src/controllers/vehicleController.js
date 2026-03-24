@@ -25,7 +25,7 @@ export const getVehicles = async (req, res) => {
 // @access  Private/Admin
 export const createVehicle = async (req, res) => {
     try {
-        const { make, model, year, licensePlate, color, status } = req.body;
+        const { make, model, year, licensePlate, color, status, driverPaymentPercentage } = req.body;
 
         const vehicleExists = await Vehicle.findOne({ licensePlate });
         if (vehicleExists) {
@@ -39,6 +39,7 @@ export const createVehicle = async (req, res) => {
             licensePlate,
             color,
             status,
+            driverPaymentPercentage,
             tenantId: req.user._id
         });
 

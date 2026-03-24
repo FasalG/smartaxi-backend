@@ -14,6 +14,14 @@ const customerSchema = new mongoose.Schema({
     address: {
         type: String
     },
+    isEligibleForCredit: {
+        type: Boolean,
+        default: false
+    },
+    creditPeriodDays: {
+        type: Number,
+        default: 0
+    },
     // The admin's ID this customer belongs to
     tenantId: {
         type: mongoose.Schema.Types.ObjectId,

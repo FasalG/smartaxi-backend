@@ -42,9 +42,7 @@ export const createTrip = async (req, res) => {
             endTime,
             customerId,
             customerName,
-            visitingPlaces,
             tripType,
-            acType,
             startOdometer,
             endOdometer,
             totalKm,
@@ -63,9 +61,7 @@ export const createTrip = async (req, res) => {
             endTime,
             customerId,
             customerName,
-            visitingPlaces,
             tripType, // Even if not asked, backend doesn't care. The frontend won't ask and we will default it if not passed.
-            acType,
             startOdometer,
             endOdometer,
             totalKm,
@@ -108,12 +104,7 @@ export const updateTripStatus = async (req, res) => {
             totalKm,
             totalDays,
             totalHours,
-            minimumCharges,
-            extraKmCharges,
-            extraHoursCharges,
             tollParking,
-            permitTax,
-            nightCharges,
             fuelCharges,
             driverBata,
             otherExpenses,
@@ -126,7 +117,12 @@ export const updateTripStatus = async (req, res) => {
             paymentStatus,
             tripType, // to save at end
             otherExpensesList,
-            notes
+            notes,
+            driverPaymentStatus,
+            driverSettlementMethod,
+            driverPaymentSubmittedAt,
+            adminConfirmedAt,
+            driverEarnings
         } = req.body;
 
         // Find trip by ID and ensure it belongs to the tenant OR the driver
@@ -153,25 +149,54 @@ export const updateTripStatus = async (req, res) => {
         if (totalKm !== undefined) trip.totalKm = totalKm;
         if (totalDays !== undefined) trip.totalDays = totalDays;
         if (totalHours !== undefined) trip.totalHours = totalHours;
-        if (minimumCharges !== undefined) trip.minimumCharges = minimumCharges;
-        if (extraKmCharges !== undefined) trip.extraKmCharges = extraKmCharges;
-        if (extraHoursCharges !== undefined) trip.extraHoursCharges = extraHoursCharges;
         if (tollParking !== undefined) trip.tollParking = tollParking;
-        if (permitTax !== undefined) trip.permitTax = permitTax;
-        if (nightCharges !== undefined) trip.nightCharges = nightCharges;
         if (fuelCharges !== undefined) trip.fuelCharges = fuelCharges;
         if (driverBata !== undefined) trip.driverBata = driverBata;
         if (otherExpenses !== undefined) trip.otherExpenses = otherExpenses;
         if (advanceAmount !== undefined) trip.advanceAmount = advanceAmount;
         if (totalAmount !== undefined) trip.totalAmount = totalAmount;
-        if (balanceAmount !== undefined) trip.balanceAmount = balanceAmount;
         if (paidAmount !== undefined) trip.paidAmount = paidAmount;
-        if (driverSettlementAmount !== undefined) trip.driverSettlementAmount = driverSettlementAmount;
         if (guestComments) trip.guestComments = guestComments;
         if (paymentStatus) trip.paymentStatus = paymentStatus;
         if (tripType) trip.tripType = tripType;
         if (otherExpensesList) trip.otherExpensesList = otherExpensesList;
         if (notes) trip.notes = notes;
+        if (driverPaymentStatus) trip.driverPaymentStatus = driverPaymentStatus;
+        if (driverSettlementMethod) trip.driverSettlementMethod = driverSettlementMethod;
+        if (driverPaymentSubmittedAt) trip.driverPaymentSubmittedAt = driverPaymentSubmittedAt;
+        if (adminConfirmedAt) trip.adminConfirmedAt = adminConfirmedAt;
+
+        // Automatic Calculations for consistency
+        const total = trip.totalAmount;
+        const advance = trip.advanceAmount;
+        const paid = trip.paidAmount;
+
+        // 1. Recalculate Balance
+        trip.balanceAmount = total - (advance + paid);
+
+        // 2. Recalculate Driver Earnings if Total Amount changed and Earnings not provided
+        if (totalAmount !== undefined && driverEarnings === undefined) {
+            const vehicle = await mongoose.model('Vehicle').findById(trip.vehicleId);
+            if (vehicle && vehicle.driverPaymentPercentage) {
+                trip.driverEarnings = Math.round((total * vehicle.driverPaymentPercentage) / 100);
+            }
+        } else if (driverEarnings !== undefined) {
+            trip.driverEarnings = driverEarnings;
+        }
+
+        // 3. Recalculate Driver Settlement Amount
+        const fuel = trip.fuelCharges;
+        const toll = trip.tollParking;
+        const bata = trip.driverBata;
+        const other = trip.otherExpenses;
+        const earnings = trip.driverEarnings;
+
+        trip.driverSettlementAmount = (advance + paid) - (fuel + toll + bata + other) - earnings;
+
+        // Manual override for driver settlement if provided
+        if (driverSettlementAmount !== undefined) {
+            trip.driverSettlementAmount = driverSettlementAmount;
+        }
 
         await trip.save();
 
