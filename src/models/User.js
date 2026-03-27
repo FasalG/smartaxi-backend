@@ -38,10 +38,21 @@ const userSchema = new mongoose.Schema({
         ref: 'User',
         default: null // Superadmin or Admin might be their own tenant. Drivers will have their Admin's ID here.
     },
+    phone: {
+        type: String,
+        unique: true,
+        sparse: true // Allow null for users who don't have phone yet, but keep unique
+    },
+    isVerified: {
+        type: Boolean,
+        default: false
+    },
     companyDetails: {
+
         type: companyDetailsSchema,
         required: false
     }
+
 }, {
     timestamps: true
 });

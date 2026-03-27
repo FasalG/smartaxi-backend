@@ -15,6 +15,14 @@ const vehicleSchema = new mongoose.Schema({
         type: Number,
         default: 20
     },
+    // Compliance Dates
+    registrationDate: { type: Date },
+    fitnessExpiry: { type: Date },
+    insuranceExpiry: { type: Date },
+    taxExpiry: { type: Date },
+    permitExpiry: { type: Date },
+    puccExpiry: { type: Date },
+
     // The admin's ID this vehicle belongs to
     tenantId: {
         type: mongoose.Schema.Types.ObjectId,

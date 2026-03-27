@@ -46,10 +46,13 @@ export const createTrip = async (req, res) => {
             startOdometer,
             endOdometer,
             totalKm,
+            baseInvoiceAmount,
+            permitAmount,
             totalAmount,
             balanceAmount,
             notes
         } = req.body;
+
 
         const tenantId = req.user.role === 'admin' ? req.user._id : req.user.tenantId;
 
@@ -65,12 +68,15 @@ export const createTrip = async (req, res) => {
             startOdometer,
             endOdometer,
             totalKm,
+            baseInvoiceAmount,
+            permitAmount,
             totalAmount,
             balanceAmount,
             notes,
             tenantId,
             status: req.body.status || 'in-progress'
         });
+
 
         const populatedTrip = await Trip.findById(trip._id)
             .populate('driverId', 'name email')
@@ -109,8 +115,11 @@ export const updateTripStatus = async (req, res) => {
             driverBata,
             otherExpenses,
             advanceAmount,
+            baseInvoiceAmount,
+            permitAmount,
             totalAmount,
             balanceAmount,
+
             paidAmount,
             driverSettlementAmount,
             guestComments,
@@ -160,38 +169,48 @@ export const updateTripStatus = async (req, res) => {
         if (paymentStatus) trip.paymentStatus = paymentStatus;
         if (tripType) trip.tripType = tripType;
         if (otherExpensesList) trip.otherExpensesList = otherExpensesList;
+        if (baseInvoiceAmount !== undefined) trip.baseInvoiceAmount = baseInvoiceAmount;
+        if (permitAmount !== undefined) trip.permitAmount = permitAmount;
         if (notes) trip.notes = notes;
         if (driverPaymentStatus) trip.driverPaymentStatus = driverPaymentStatus;
         if (driverSettlementMethod) trip.driverSettlementMethod = driverSettlementMethod;
         if (driverPaymentSubmittedAt) trip.driverPaymentSubmittedAt = driverPaymentSubmittedAt;
         if (adminConfirmedAt) trip.adminConfirmedAt = adminConfirmedAt;
 
+
         // Automatic Calculations for consistency
         const total = trip.totalAmount;
         const advance = trip.advanceAmount;
         const paid = trip.paidAmount;
 
-        // 1. Recalculate Balance
-        trip.balanceAmount = total - (advance + paid);
+        // 1. Recalculate Total Amount (Billed to Customer)
+        // totalAmount = baseInvoice + toll + bata + permit
+        trip.totalAmount = (trip.baseInvoiceAmount || 0) + (trip.tollParking || 0) + (trip.driverBata || 0) + (trip.permitAmount || 0);
 
-        // 2. Recalculate Driver Earnings if Total Amount changed and Earnings not provided
-        if (totalAmount !== undefined && driverEarnings === undefined) {
+        // 2. Recalculate Balance (Customer Credit/Debit)
+        trip.balanceAmount = trip.totalAmount - (advance + paid);
+
+        // 3. Recalculate Driver Earnings (Percentage of Base Invoice ONLY)
+        if (baseInvoiceAmount !== undefined && driverEarnings === undefined) {
             const vehicle = await mongoose.model('Vehicle').findById(trip.vehicleId);
             if (vehicle && vehicle.driverPaymentPercentage) {
-                trip.driverEarnings = Math.round((total * vehicle.driverPaymentPercentage) / 100);
+                trip.driverEarnings = Math.round(((trip.baseInvoiceAmount || 0) * vehicle.driverPaymentPercentage) / 100);
             }
         } else if (driverEarnings !== undefined) {
             trip.driverEarnings = driverEarnings;
         }
 
-        // 3. Recalculate Driver Settlement Amount
-        const fuel = trip.fuelCharges;
-        const toll = trip.tollParking;
-        const bata = trip.driverBata;
-        const other = trip.otherExpenses;
-        const earnings = trip.driverEarnings;
+        // 4. Recalculate Driver Settlement Amount
+        const fuel = trip.fuelCharges || 0;
+        const toll = trip.tollParking || 0;
+        const bata = trip.driverBata || 0;
+        const permit = trip.permitAmount || 0;
+        const other = trip.otherExpenses || 0;
+        const earnings = trip.driverEarnings || 0;
 
-        trip.driverSettlementAmount = (advance + paid) - (fuel + toll + bata + other) - earnings;
+        // Settlement = (Cash Recvd) - (Expenses) - (Earnings)
+        trip.driverSettlementAmount = (advance + paid) - (fuel + toll + bata + permit + other) - earnings;
+
 
         // Manual override for driver settlement if provided
         if (driverSettlementAmount !== undefined) {

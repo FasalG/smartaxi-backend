@@ -94,10 +94,19 @@ const tripSchema = new mongoose.Schema({
         type: Number,
         default: 0
     },
+    baseInvoiceAmount: {
+        type: Number,
+        default: 0
+    },
+    permitAmount: {
+        type: Number,
+        default: 0
+    },
     totalAmount: {
         type: Number,
         default: 0
     },
+
     balanceAmount: {
         type: Number,
         default: 0

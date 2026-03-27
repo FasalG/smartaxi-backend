@@ -24,7 +24,7 @@ export const getCustomers = async (req, res) => {
 // @access  Private
 export const createCustomer = async (req, res) => {
     try {
-        const { name, phone, email, address, isEligibleForCredit, creditPeriodDays } = req.body;
+        const { name, phone, email, address, isEligibleForCredit, creditPeriodDays, isGuest } = req.body;
         const tenantId = req.user.role === 'admin' ? req.user._id : req.user.tenantId;
 
         const customer = await Customer.create({
@@ -34,8 +34,10 @@ export const createCustomer = async (req, res) => {
             address,
             isEligibleForCredit,
             creditPeriodDays,
+            isGuest,
             tenantId
         });
+
 
         res.status(201).json({ success: true, data: customer, message: 'Customer created successfully' });
     } catch (error) {
