@@ -50,7 +50,7 @@ app.use((err, req, res, next) => {
 
 // Basic route
 app.get('/', (req, res) => {
-    res.send('Rental ERP API is running...');
+    res.send('Rental ERP API is running...');   
 });
 
 const PORT = process.env.PORT || 5051;
