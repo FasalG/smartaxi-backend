@@ -53,7 +53,7 @@ app.get('/', (req, res) => {
     res.send('Rental ERP API is running...');
 });
 
-const PORT = process.env.PORT || 5050;
+const PORT = process.env.PORT || 5051;
 console.log('--- SERVER STARTING ON PORT:', PORT);
 const HOST = '0.0.0.0';
 
