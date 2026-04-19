@@ -31,13 +31,13 @@ if (process.env.NODE_ENV === 'development') {
 }
 
 // Mount public routes
-app.use('/api/auth', authRoutes);
+app.use('/smart/auth', authRoutes);
 
 // Mount protected routes
-app.use('/api/vehicles', protect, vehicleRoutes);
-app.use('/api/trips', protect, tripRoutes);
-app.use('/api/maintenance', protect, maintenanceRoutes);
-app.use('/api/customers', protect, customerRoutes);
+app.use('/smart/vehicles', protect, vehicleRoutes);
+app.use('/smart/trips', protect, tripRoutes);
+app.use('/smart/maintenance', protect, maintenanceRoutes);
+app.use('/smart/customers', protect, customerRoutes);
 
 // Error handler
 app.use((err, req, res, next) => {
