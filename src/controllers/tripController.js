@@ -210,10 +210,14 @@ export const updateTripStatus = async (req, res) => {
         const advance = trip.advanceAmount;
         const paid = trip.paidAmount;
 
-        // 1. Recalculate Total Amount (Billed to Customer)
-        // totalAmount = baseInvoice + toll + bata + permit
-        trip.totalAmount = (trip.baseInvoiceAmount || 0) + (trip.tollParking || 0) + (trip.driverBata || 0) + (trip.permitAmount || 0);
-
+        // 1. Recalculate Total Amount (Billed to Customer) ONLY if not provided
+        // This allows admin to manually override the gross total, including setting it to 0.
+        if (totalAmount !== undefined) {
+            trip.totalAmount = totalAmount;
+        } else {
+            trip.totalAmount = (trip.baseInvoiceAmount || 0) + (trip.tollParking || 0) + (trip.driverBata || 0) + (trip.permitAmount || 0);
+        }
+        
         // 2. Recalculate Balance (Customer Credit/Debit)
         trip.balanceAmount = trip.totalAmount - (advance + paid);
 
