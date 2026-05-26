@@ -138,7 +138,7 @@ export const getDriverSettlements = async (req, res) => {
         const settlements = await DriverSettlement.find({ driverId: req.user._id })
             .populate({
                 path: 'trips.tripId',
-                select: 'customerName startTime totalAmount driverSettlementAmount driverSettlementPaidAmount'
+                select: 'customerName startTime totalAmount driverSettlementAmount driverSettlementPaidAmount startLocation endLocation tripType'
             })
             .sort({ createdAt: -1 });
 
@@ -162,7 +162,7 @@ export const getAdminSettlements = async (req, res) => {
             .populate('driverId', 'name email')
             .populate({
                 path: 'trips.tripId',
-                select: 'customerName startTime totalAmount driverSettlementAmount driverSettlementPaidAmount'
+                select: 'customerName startTime totalAmount driverSettlementAmount driverSettlementPaidAmount startLocation endLocation tripType'
             })
             .sort({ createdAt: -1 });
 
