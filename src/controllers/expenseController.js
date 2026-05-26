@@ -167,14 +167,15 @@ export const deleteExpenseType = async (req, res) => {
 // @access  Private
 export const updateExpense = async (req, res) => {
     try {
-        const { vehicleId, expenseType, amount, date, remarks, imageUrl } = req.body;
+        const { vehicleId, expenseType, amount, date, remarks, imageUrl, status } = req.body;
         
         let query = { _id: req.params.id };
         if (req.user.role === 'driver') {
             query.driverId = req.user._id;
             query.status = 'pending'; // Drivers can only edit their pending expenses!
         } else {
-            query.tenantId = req.user._id;
+            const tenantId = req.user.role === 'admin' ? req.user._id : req.user.tenantId;
+            query.tenantId = tenantId;
         }
 
         let uploadedUrl = imageUrl;
@@ -186,9 +187,15 @@ export const updateExpense = async (req, res) => {
             uploadedUrl = uploadResult.secure_url;
         }
 
-        const updateData = { vehicleId, expenseType, amount, date, remarks };
-        if (imageUrl !== undefined) {
-            updateData.imageUrl = uploadedUrl;
+        const updateData = {};
+        if (vehicleId !== undefined) updateData.vehicleId = vehicleId;
+        if (expenseType !== undefined) updateData.expenseType = expenseType;
+        if (amount !== undefined) updateData.amount = amount;
+        if (date !== undefined) updateData.date = date;
+        if (remarks !== undefined) updateData.remarks = remarks;
+        if (imageUrl !== undefined) updateData.imageUrl = uploadedUrl;
+        if (req.user.role === 'admin' && status !== undefined) {
+            updateData.status = status;
         }
 
         const expense = await Expense.findOneAndUpdate(
