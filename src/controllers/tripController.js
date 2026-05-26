@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 import Trip from '../models/Trip.js';
 
 // @desc    Get all trips for a tenant (Admin view)
@@ -54,6 +55,7 @@ export const createTrip = async (req, res) => {
             permitAmount,
             baseInvoiceAmount,
             advanceAmount,
+            driverAdvanceAmount,
             paidAmount,
             totalAmount,
             balanceAmount,
@@ -91,6 +93,7 @@ export const createTrip = async (req, res) => {
             permitAmount: permitAmount || 0,
             baseInvoiceAmount: baseInvoiceAmount || 0,
             advanceAmount: advanceAmount || 0,
+            driverAdvanceAmount: driverAdvanceAmount || 0,
             paidAmount: paidAmount || 0,
             totalAmount: totalAmount || 0,
             balanceAmount: balanceAmount || 0,
@@ -142,6 +145,7 @@ export const updateTripStatus = async (req, res) => {
             driverBata,
             otherExpenses,
             advanceAmount,
+            driverAdvanceAmount,
             baseInvoiceAmount,
             permitAmount,
             totalAmount,
@@ -190,6 +194,7 @@ export const updateTripStatus = async (req, res) => {
         if (driverBata !== undefined) trip.driverBata = driverBata;
         if (otherExpenses !== undefined) trip.otherExpenses = otherExpenses;
         if (advanceAmount !== undefined) trip.advanceAmount = advanceAmount;
+        if (driverAdvanceAmount !== undefined) trip.driverAdvanceAmount = driverAdvanceAmount;
         if (totalAmount !== undefined) trip.totalAmount = totalAmount;
         if (paidAmount !== undefined) trip.paidAmount = paidAmount;
         if (guestComments) trip.guestComments = guestComments;
@@ -209,6 +214,7 @@ export const updateTripStatus = async (req, res) => {
         const total = trip.totalAmount;
         const advance = trip.advanceAmount;
         const paid = trip.paidAmount;
+        const driverAdvance = trip.driverAdvanceAmount || 0;
 
         // 1. Recalculate Total Amount (Billed to Customer) ONLY if not provided
         // This allows admin to manually override the gross total, including setting it to 0.
@@ -217,7 +223,7 @@ export const updateTripStatus = async (req, res) => {
         } else {
             trip.totalAmount = (trip.baseInvoiceAmount || 0) + (trip.tollParking || 0) + (trip.driverBata || 0) + (trip.permitAmount || 0);
         }
-        
+
         // 2. Recalculate Balance (Customer Credit/Debit)
         trip.balanceAmount = trip.totalAmount - (advance + paid);
 
@@ -240,7 +246,7 @@ export const updateTripStatus = async (req, res) => {
         const earnings = trip.driverEarnings || 0;
 
         // Settlement = (Cash Recvd) - (Expenses) - (Earnings)
-        trip.driverSettlementAmount = (advance + paid) - (fuel + toll + bata + permit + other) - earnings;
+        trip.driverSettlementAmount = (driverAdvance + paid) - (fuel + toll + bata + permit + other) - earnings;
 
 
         // Manual override for driver settlement if provided

@@ -10,6 +10,7 @@ import vehicleRoutes from './routes/vehicleRoutes.js';
 import tripRoutes from './routes/tripRoutes.js';
 import maintenanceRoutes from './routes/maintenanceRoutes.js';
 import customerRoutes from './routes/customerRoutes.js';
+import expenseRoutes from './routes/expenseRoutes.js';
 
 // Load env vars
 dotenv.config();
@@ -19,8 +20,9 @@ connectDB();
 
 const app = express();
 
-// Body parser
-app.use(express.json());
+// Body parser (increased limit for base64 receipt uploads)
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
 // Enable CORS
 app.use(cors());
@@ -38,6 +40,7 @@ app.use('/smart/vehicles', protect, vehicleRoutes);
 app.use('/smart/trips', protect, tripRoutes);
 app.use('/smart/maintenance', protect, maintenanceRoutes);
 app.use('/smart/customers', protect, customerRoutes);
+app.use('/smart/expenses', protect, expenseRoutes);
 
 // Error handler
 app.use((err, req, res, next) => {

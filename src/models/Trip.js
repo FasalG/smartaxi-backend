@@ -94,6 +94,10 @@ const tripSchema = new mongoose.Schema({
         type: Number,
         default: 0
     },
+    driverAdvanceAmount: {
+        type: Number,
+        default: 0
+    },
     baseInvoiceAmount: {
         type: Number,
         default: 0

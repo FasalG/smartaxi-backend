@@ -48,11 +48,13 @@ const userSchema = new mongoose.Schema({
         default: false
     },
     companyDetails: {
-
         type: companyDetailsSchema,
         required: false
+    },
+    expenseTypes: {
+        type: [String],
+        default: ['Fuel', 'Toll', 'Maintenance', 'Parking', 'Cleaning']
     }
-
 }, {
     timestamps: true
 });
