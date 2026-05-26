@@ -221,7 +221,7 @@ export const updateTripStatus = async (req, res) => {
         if (totalAmount !== undefined) {
             trip.totalAmount = totalAmount;
         } else {
-            trip.totalAmount = (trip.baseInvoiceAmount || 0) + (trip.tollParking || 0) + (trip.driverBata || 0) + (trip.permitAmount || 0);
+            trip.totalAmount = trip.baseInvoiceAmount || 0;
         }
 
         // 2. Recalculate Balance (Customer Credit/Debit)
