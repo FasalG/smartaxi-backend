@@ -11,6 +11,7 @@ import tripRoutes from './routes/tripRoutes.js';
 import maintenanceRoutes from './routes/maintenanceRoutes.js';
 import customerRoutes from './routes/customerRoutes.js';
 import expenseRoutes from './routes/expenseRoutes.js';
+import settlementRoutes from './routes/settlementRoutes.js';
 
 // Load env vars
 dotenv.config();
@@ -41,6 +42,7 @@ app.use('/smart/trips', protect, tripRoutes);
 app.use('/smart/maintenance', protect, maintenanceRoutes);
 app.use('/smart/customers', protect, customerRoutes);
 app.use('/smart/expenses', protect, expenseRoutes);
+app.use('/smart/settlements', protect, settlementRoutes);
 
 // Error handler
 app.use((err, req, res, next) => {

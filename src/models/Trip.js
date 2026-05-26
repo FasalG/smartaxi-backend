@@ -119,6 +119,10 @@ const tripSchema = new mongoose.Schema({
         type: Number,
         default: 0 // +ve means driver owes admin, -ve means admin owes driver
     },
+    driverSettlementPaidAmount: {
+        type: Number,
+        default: 0
+    },
     driverEarnings: {
         type: Number,
         default: 0
