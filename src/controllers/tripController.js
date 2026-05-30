@@ -1,5 +1,6 @@
 import mongoose from 'mongoose';
 import Trip from '../models/Trip.js';
+import Expense from '../models/Expense.js';
 
 // @desc    Get all trips for a tenant (Admin view)
 // @route   GET /api/trips
@@ -10,7 +11,28 @@ export const getTrips = async (req, res) => {
             .populate('driverId', 'name email')
             .populate('vehicleId', 'licensePlate make model')
             .populate('customerId', 'name phone address');
-        res.json({ success: true, data: trips });
+
+        const tripIds = trips.map(t => t._id);
+        const linkedExpenses = await Expense.find({ tripId: { $in: tripIds } });
+
+        const expensesMap = {};
+        linkedExpenses.forEach(exp => {
+            if (exp.tripId) {
+                const tripIdStr = exp.tripId.toString();
+                if (!expensesMap[tripIdStr]) {
+                    expensesMap[tripIdStr] = [];
+                }
+                expensesMap[tripIdStr].push(exp);
+            }
+        });
+
+        const data = trips.map(trip => {
+            const tripObj = trip.toObject();
+            tripObj.linkedExpenses = expensesMap[trip._id.toString()] || [];
+            return tripObj;
+        });
+
+        res.json({ success: true, data });
     } catch (error) {
         res.status(500).json({ success: false, message: 'Server error', error: error.message });
     }
@@ -24,7 +46,28 @@ export const getDriverTrips = async (req, res) => {
         const trips = await Trip.find({ driverId: req.user._id })
             .populate('vehicleId', 'licensePlate make model')
             .populate('customerId', 'name phone address');
-        res.json({ success: true, data: trips });
+
+        const tripIds = trips.map(t => t._id);
+        const linkedExpenses = await Expense.find({ tripId: { $in: tripIds } });
+
+        const expensesMap = {};
+        linkedExpenses.forEach(exp => {
+            if (exp.tripId) {
+                const tripIdStr = exp.tripId.toString();
+                if (!expensesMap[tripIdStr]) {
+                    expensesMap[tripIdStr] = [];
+                }
+                expensesMap[tripIdStr].push(exp);
+            }
+        });
+
+        const data = trips.map(trip => {
+            const tripObj = trip.toObject();
+            tripObj.linkedExpenses = expensesMap[trip._id.toString()] || [];
+            return tripObj;
+        });
+
+        res.json({ success: true, data });
     } catch (error) {
         res.status(500).json({ success: false, message: 'Server error', error: error.message });
     }
@@ -237,16 +280,18 @@ export const updateTripStatus = async (req, res) => {
             trip.driverEarnings = driverEarnings;
         }
 
-        // 4. Recalculate Driver Settlement Amount
-        const fuel = trip.fuelCharges || 0;
-        const toll = trip.tollParking || 0;
-        const bata = trip.driverBata || 0;
-        const permit = trip.permitAmount || 0;
-        const other = trip.otherExpenses || 0;
-        const earnings = trip.driverEarnings || 0;
+        // 4. Recalculate Driver Settlement Amount ONLY if the trip is not already settled/confirmed
+        if (trip.driverPaymentStatus !== 'confirmed') {
+            const fuel = trip.fuelCharges || 0;
+            const toll = trip.tollParking || 0;
+            const bata = trip.driverBata || 0;
+            const permit = trip.permitAmount || 0;
+            const other = trip.otherExpenses || 0;
+            const earnings = trip.driverEarnings || 0;
 
-        // Settlement = (Cash Recvd) - (Expenses) - (Earnings)
-        trip.driverSettlementAmount = (driverAdvance + paid) - (fuel + toll + bata + permit + other) - earnings;
+            // Settlement = (Cash Recvd) - (Expenses) - (Earnings)
+            trip.driverSettlementAmount = (driverAdvance + paid) - (fuel + toll + bata + permit + other) - earnings;
+        }
 
 
         // Manual override for driver settlement if provided

@@ -1,5 +1,6 @@
 import Expense from '../models/Expense.js';
 import User from '../models/User.js';
+import Trip from '../models/Trip.js';
 import { v2 as cloudinary } from 'cloudinary';
 
 // Configure cloudinary
@@ -25,6 +26,7 @@ export const getExpenses = async (req, res) => {
         const expenses = await Expense.find(query)
             .populate('vehicleId', 'licensePlate make model')
             .populate('driverId', 'name email')
+            .populate('tripId', 'customerName startTime totalAmount driverSettlementAmount driverSettlementPaidAmount startLocation endLocation tripType')
             .sort({ date: -1 });
 
         res.json({ success: true, data: expenses });
@@ -38,7 +40,7 @@ export const getExpenses = async (req, res) => {
 // @access  Private
 export const createExpense = async (req, res) => {
     try {
-        const { vehicleId, expenseType, amount, date, remarks, imageUrl } = req.body;
+        const { vehicleId, expenseType, amount, date, remarks, imageUrl, tripId } = req.body;
 
         const tenantId = req.user.role === 'admin' ? req.user._id : req.user.tenantId;
 
@@ -65,7 +67,8 @@ export const createExpense = async (req, res) => {
             date: date || new Date(),
             remarks,
             tenantId,
-            imageUrl: uploadedUrl
+            imageUrl: uploadedUrl,
+            tripId: tripId || null
         });
 
         res.status(201).json({ success: true, data: expense, message: 'Expense logged successfully' });
@@ -162,12 +165,36 @@ export const deleteExpenseType = async (req, res) => {
     }
 };
 
+// Helper to automatically close a trip if its balance becomes 0 or negative
+const checkAndAutoCloseTrip = async (tripId) => {
+    if (!tripId) return;
+    try {
+        const trip = await Trip.findById(tripId);
+        if (!trip || trip.driverPaymentStatus === 'confirmed') return;
+
+        // Fetch all approved expenses for this trip
+        const approvedExpenses = await Expense.find({ tripId, status: 'approved' });
+        const totalExpenses = approvedExpenses.reduce((sum, e) => sum + e.amount, 0);
+
+        // Remaining balance to settle
+        const remaining = (trip.driverSettlementAmount || 0) - (trip.driverSettlementPaidAmount || 0) - totalExpenses;
+        if (remaining <= 0) {
+            trip.driverSettlementAmount = trip.driverSettlementPaidAmount || 0;
+            trip.driverPaymentStatus = 'confirmed';
+            trip.adminConfirmedAt = new Date();
+            await trip.save();
+        }
+    } catch (err) {
+        console.error('Error auto-settling trip:', err);
+    }
+};
+
 // @desc    Update an expense record
 // @route   PUT /smart/expenses/:id
 // @access  Private
 export const updateExpense = async (req, res) => {
     try {
-        const { vehicleId, expenseType, amount, date, remarks, imageUrl, status } = req.body;
+        const { vehicleId, expenseType, amount, date, remarks, imageUrl, status, tripId } = req.body;
         
         let query = { _id: req.params.id };
         if (req.user.role === 'driver') {
@@ -194,6 +221,7 @@ export const updateExpense = async (req, res) => {
         if (date !== undefined) updateData.date = date;
         if (remarks !== undefined) updateData.remarks = remarks;
         if (imageUrl !== undefined) updateData.imageUrl = uploadedUrl;
+        if (tripId !== undefined) updateData.tripId = tripId || null;
         if (req.user.role === 'admin' && status !== undefined) {
             updateData.status = status;
         }
@@ -206,6 +234,11 @@ export const updateExpense = async (req, res) => {
 
         if (!expense) {
             return res.status(404).json({ success: false, message: 'Expense not found or unauthorized' });
+        }
+
+        // Auto close trip if balance becomes <= 0
+        if (expense.tripId && expense.status === 'approved') {
+            await checkAndAutoCloseTrip(expense.tripId);
         }
 
         res.json({ success: true, data: expense, message: 'Expense updated successfully' });

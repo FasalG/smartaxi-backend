@@ -1,5 +1,6 @@
 import DriverSettlement from '../models/DriverSettlement.js';
 import Trip from '../models/Trip.js';
+import Expense from '../models/Expense.js';
 import { v2 as cloudinary } from 'cloudinary';
 
 // Configure cloudinary
@@ -43,10 +44,28 @@ export const getPendingTrips = async (req, res) => {
             });
         });
 
-        // 4. Append submittedAmount to each trip object
+        // 4. Fetch linked expenses for these trips
+        const tripIds = trips.map(t => t._id);
+        const linkedExpenses = await Expense.find({
+            tripId: { $in: tripIds }
+        });
+
+        const expensesMap = {};
+        linkedExpenses.forEach(exp => {
+            if (exp.tripId) {
+                const tripIdStr = exp.tripId.toString();
+                if (!expensesMap[tripIdStr]) {
+                    expensesMap[tripIdStr] = [];
+                }
+                expensesMap[tripIdStr].push(exp);
+            }
+        });
+
+        // 5. Append submittedAmount and linkedExpenses to each trip object
         const data = trips.map(trip => {
             const tripObj = trip.toObject();
             tripObj.submittedAmount = submittedAllocations[trip._id.toString()] || 0;
+            tripObj.linkedExpenses = expensesMap[trip._id.toString()] || [];
             return tripObj;
         });
 
@@ -142,7 +161,42 @@ export const getDriverSettlements = async (req, res) => {
             })
             .sort({ createdAt: -1 });
 
-        res.json({ success: true, data: settlements });
+        // Gather all trip IDs across all settlements
+        const tripIds = [];
+        settlements.forEach(s => {
+            (s.trips || []).forEach(t => {
+                if (t.tripId) {
+                    tripIds.push(t.tripId._id || t.tripId);
+                }
+            });
+        });
+
+        // Fetch all linked expenses for these trips
+        const linkedExpenses = await Expense.find({ tripId: { $in: tripIds } });
+        const expensesMap = {};
+        linkedExpenses.forEach(exp => {
+            if (exp.tripId) {
+                const tripIdStr = exp.tripId.toString();
+                if (!expensesMap[tripIdStr]) {
+                    expensesMap[tripIdStr] = [];
+                }
+                expensesMap[tripIdStr].push(exp);
+            }
+        });
+
+        // Attach linkedExpenses to each populated trip
+        const data = settlements.map(s => {
+            const sObj = s.toObject();
+            sObj.trips.forEach(t => {
+                if (t.tripId) {
+                    const tripIdStr = (t.tripId._id || t.tripId).toString();
+                    t.tripId.linkedExpenses = expensesMap[tripIdStr] || [];
+                }
+            });
+            return sObj;
+        });
+
+        res.json({ success: true, data });
     } catch (error) {
         console.error('Error fetching driver settlements:', error);
         res.status(500).json({ success: false, message: 'Server error', error: error.message });
@@ -166,7 +220,42 @@ export const getAdminSettlements = async (req, res) => {
             })
             .sort({ createdAt: -1 });
 
-        res.json({ success: true, data: settlements });
+        // Gather all trip IDs across all settlements
+        const tripIds = [];
+        settlements.forEach(s => {
+            (s.trips || []).forEach(t => {
+                if (t.tripId) {
+                    tripIds.push(t.tripId._id || t.tripId);
+                }
+            });
+        });
+
+        // Fetch all linked expenses for these trips
+        const linkedExpenses = await Expense.find({ tripId: { $in: tripIds } });
+        const expensesMap = {};
+        linkedExpenses.forEach(exp => {
+            if (exp.tripId) {
+                const tripIdStr = exp.tripId.toString();
+                if (!expensesMap[tripIdStr]) {
+                    expensesMap[tripIdStr] = [];
+                }
+                expensesMap[tripIdStr].push(exp);
+            }
+        });
+
+        // Attach linkedExpenses to each populated trip
+        const data = settlements.map(s => {
+            const sObj = s.toObject();
+            sObj.trips.forEach(t => {
+                if (t.tripId) {
+                    const tripIdStr = (t.tripId._id || t.tripId).toString();
+                    t.tripId.linkedExpenses = expensesMap[tripIdStr] || [];
+                }
+            });
+            return sObj;
+        });
+
+        res.json({ success: true, data });
     } catch (error) {
         console.error('Error fetching admin settlements:', error);
         res.status(500).json({ success: false, message: 'Server error', error: error.message });
@@ -198,10 +287,16 @@ export const approveSettlement = async (req, res) => {
                 // Add the allocated amount to the paid amount
                 trip.driverSettlementPaidAmount = (trip.driverSettlementPaidAmount || 0) + item.allocatedAmount;
 
+                // Fetch all approved expenses for this trip
+                const approvedExpenses = await Expense.find({ tripId: trip._id, status: 'approved' });
+                const totalExpenses = approvedExpenses.reduce((sum, e) => sum + e.amount, 0);
+
                 // Check if trip is fully settled
-                const remaining = trip.driverSettlementAmount - trip.driverSettlementPaidAmount;
+                const remaining = (trip.driverSettlementAmount || 0) - (trip.driverSettlementPaidAmount || 0) - totalExpenses;
                 if (remaining <= 0) {
+                    trip.driverSettlementAmount = trip.driverSettlementPaidAmount || 0;
                     trip.driverPaymentStatus = 'confirmed';
+                    trip.adminConfirmedAt = new Date();
                 } else {
                     trip.driverPaymentStatus = 'pending'; // Reverts to pending with adjusted remaining balance
                 }

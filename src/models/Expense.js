@@ -47,6 +47,11 @@ const expenseSchema = new mongoose.Schema({
     },
     imageUrl: {
         type: String
+    },
+    tripId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Trip',
+        required: false
     }
 }, {
     timestamps: true
